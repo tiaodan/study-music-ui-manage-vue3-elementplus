@@ -90,7 +90,15 @@ const HttpManager = {
     // 返回歌单里指定歌单ID的歌曲
     getListSongOfSongId: (songListId) => get(`listSong/detail?songListId=${songListId}`),
     // 删除歌单里的歌曲
-    deleteListSong: (songId) => get(`listSong/delete?songId=${songId}`)
+    deleteListSong: (songId) => get(`listSong/delete?songId=${songId}`),
+
+    // =======================> 音乐工具 API (lx)
+    // 名字重新格式化 - 遍历指定路径的 mp3/wav/lrc 文件，重命名为 "多作者-歌名.扩展名"
+    formatFileNames: (path) => post(`musicTool/formatFileNames`, {path}),
+    // 移动文件到HDD
+    moveFiles: (fromPath, toPath) => post(`musicTool/moveFiles`, {fromPath, toPath}),
+    // 规整进数据库 - 遍历指定路径的文件，解析歌手→插入作者→插入歌曲→关联song-singer
+    importToDatabase: (path) => post(`musicTool/importToDatabase`, {path})
 
 }
 

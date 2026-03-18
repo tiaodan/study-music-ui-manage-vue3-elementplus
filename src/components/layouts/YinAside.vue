@@ -24,13 +24,17 @@
         <el-icon><Document /></el-icon>
         <span>歌单管理</span>
       </el-menu-item>
+      <el-menu-item index="musicTool">
+        <el-icon><FolderOpened /></el-icon>
+        <span>音乐工具</span>
+      </el-menu-item>
     </el-menu>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref } from "vue";
-import { PieChart, Mic, Document, User } from "@element-plus/icons-vue";
+import { PieChart, Mic, Document, User, FolderOpened } from "@element-plus/icons-vue";
 import emitter from "@/utils/emitter";
 
 const collapse = ref(false);

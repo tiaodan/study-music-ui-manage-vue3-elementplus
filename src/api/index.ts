@@ -94,11 +94,11 @@ const HttpManager = {
 
     // =======================> 音乐工具 API (lx)
     // 名字重新格式化 - 遍历指定路径的 mp3/wav/lrc 文件，重命名为 "多作者-歌名.扩展名"
-    formatFileNames: (path) => post(`musicTool/formatFileNames`, {path}),
+    formatFileNames: (path) => post(`import/format-name`, {path}),
     // 移动文件到HDD
-    moveFiles: (fromPath, toPath) => post(`musicTool/moveFiles`, {fromPath, toPath}),
+    moveFiles: (fromPath, toPath) => post(`import/move-file`, {fromPath, toPath}),
     // 规整进数据库 - 遍历指定路径的文件，解析歌手→插入作者→插入歌曲→关联song-singer
-    importToDatabase: (path) => post(`musicTool/importToDatabase`, {path})
+    importToDatabase: (path) => post(`import/songs`, {path})
 
 }
 

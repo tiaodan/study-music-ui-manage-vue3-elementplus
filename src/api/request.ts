@@ -3,11 +3,11 @@ import router from '../router'
 
 const BASE_URL = process.env.NODE_HOST
 
-axios.defaults.timeout = 5000 // 超时时间设置
+axios.defaults.timeout = 120000 // 超时时间 2 分钟
 axios.defaults.withCredentials = true // true允许跨域
 axios.defaults.baseURL = BASE_URL
 // Content-Type 响应头
-axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
+axios.defaults.headers.post['Content-Type'] = 'application/json;charset=UTF-8'
 
 // 响应拦截器
 axios.interceptors.response.use(
@@ -84,8 +84,14 @@ export function get(url, params?: object) {
 export function post(url, data = {}) {
   return new Promise((resolve, reject) => {
     axios.post(url, data).then(
-      response => resolve(response.data),
-      error => reject(error)
+      response => {
+        console.log('post success:', response);
+        resolve(response.data);
+      },
+      error => {
+        console.log('post error:', error);
+        reject(error);
+      }
     );
   });
 }

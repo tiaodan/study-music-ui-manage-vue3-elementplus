@@ -10,10 +10,10 @@
       <!-- 名字重新格式化 -->
       <el-tab-pane label="名字重新格式化" name="format">
         <el-form label-width="140px">
-          <el-form-item label="歌手-专辑路径">
+          <el-form-item label="歌手/专辑路径">
             <el-input
               v-model="formatForm.path"
-              placeholder="例如: D:/音乐/周杰伦-依然范特西"
+              placeholder="例如: \\100.86.118.11\音乐\周杰伦\依然范特西"
               style="width: 400px"
             />
           </el-form-item>
@@ -23,7 +23,8 @@
             </el-button>
           </el-form-item>
         </el-form>
-        <el-divider />
+        <el-alert v-if="formatLoading" title="正在处理中，请稍候..." type="info" show-icon :closable="false" />
+        <el-divider v-if="formatLoading" />
         <div v-if="formatResult" class="result-box">
           <el-alert :title="formatResult.message" :type="formatResult.success ? 'success' : 'error'" show-icon />
         </div>
@@ -52,7 +53,8 @@
             </el-button>
           </el-form-item>
         </el-form>
-        <el-divider />
+        <el-alert v-if="moveLoading" title="正在处理中，请稍候..." type="info" show-icon :closable="false" />
+        <el-divider v-if="moveLoading" />
         <div v-if="moveResult" class="result-box">
           <el-alert :title="moveResult.message" :type="moveResult.success ? 'success' : 'error'" show-icon />
         </div>
@@ -74,15 +76,16 @@
             </el-button>
           </el-form-item>
         </el-form>
-        <el-divider />
+        <el-alert v-if="importLoading" title="正在处理中，请稍候..." type="info" show-icon :closable="false" />
+        <el-divider v-if="importLoading" />
         <div v-if="importResult" class="result-box">
           <el-alert :title="importResult.message" :type="importResult.success ? 'success' : 'error'" show-icon />
           <el-divider />
           <el-descriptions v-if="importResult.data" title="导入详情" :column="2" border>
-            <el-descriptions-item label="新增歌手">{{ importResult.data.newSingers || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="新增歌曲">{{ importResult.data.newSongs || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="更新歌曲">{{ importResult.data.updatedSongs || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="跳过歌曲">{{ importResult.data.skippedSongs || 0 }}</el-descriptions-item>
+            <el-descriptions-item label="导入歌曲">{{ importResult.data.imported?.length || 0 }}</el-descriptions-item>
+            <el-descriptions-item label="总文件数">{{ importResult.data.total || 0 }}</el-descriptions-item>
+            <el-descriptions-item label="失败数">{{ importResult.data.failed?.length || 0 }}</el-descriptions-item>
+            <el-descriptions-item label="跳过数">{{ (importResult.data.total || 0) - (importResult.data.imported?.length || 0) - (importResult.data.failed?.length || 0) }}</el-descriptions-item>
           </el-descriptions>
         </div>
       </el-tab-pane>
@@ -91,12 +94,13 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed } from "vue";
+import { defineComponent, ref, computed, getCurrentInstance } from "vue";
 import { useStore } from "vuex";
 import { HttpManager } from "@/api";
 
 export default defineComponent({
   setup() {
+    const { proxy } = getCurrentInstance() as any;
     const store = useStore();
     const breadcrumbList = computed(() => store.getters.breadcrumbList);
 
@@ -107,17 +111,24 @@ export default defineComponent({
     const formatLoading = ref(false);
     const formatResult = ref<any>(null);
 
+    // 去除路径末尾的 / \ 以及它们的连续组合
+    function trimPathTrailingSlash(path: string): string {
+      return path.replace(/[/\\]+$/, "");
+    }
+
     async function handleFormat() {
       if (!formatForm.value.path) {
-        (window as any).$message.warning("请输入路径");
+        proxy.$message.warning("请输入路径");
         return;
       }
+      // 预处理：去除末尾的 / \ 以及它们的连续组合
+      const processedPath = trimPathTrailingSlash(formatForm.value.path);
       formatLoading.value = true;
       formatResult.value = null;
       try {
-        const result = await HttpManager.formatFileNames(formatForm.value.path) as ResponseBody;
+        const result = await HttpManager.formatFileNames(processedPath) as ResponseBody;
         formatResult.value = result;
-        (window as any).$message({
+        proxy.$message({
           message: result.message,
           type: result.type,
         });
@@ -135,7 +146,7 @@ export default defineComponent({
 
     async function handleMove() {
       if (!moveForm.value.fromPath || !moveForm.value.toPath) {
-        (window as any).$message.warning("请输入源路径和目标路径");
+        proxy.$message.warning("请输入源路径和目标路径");
         return;
       }
       moveLoading.value = true;
@@ -143,7 +154,7 @@ export default defineComponent({
       try {
         const result = await HttpManager.moveFiles(moveForm.value.fromPath, moveForm.value.toPath) as ResponseBody;
         moveResult.value = result;
-        (window as any).$message({
+        proxy.$message({
           message: result.message,
           type: result.type,
         });
@@ -161,7 +172,7 @@ export default defineComponent({
 
     async function handleImport() {
       if (!importForm.value.path) {
-        (window as any).$message.warning("请输入路径");
+        proxy.$message.warning("请输入路径");
         return;
       }
       importLoading.value = true;
@@ -169,7 +180,7 @@ export default defineComponent({
       try {
         const result = await HttpManager.importToDatabase(importForm.value.path) as ResponseBody;
         importResult.value = result;
-        (window as any).$message({
+        proxy.$message({
           message: result.message,
           type: result.type,
         });

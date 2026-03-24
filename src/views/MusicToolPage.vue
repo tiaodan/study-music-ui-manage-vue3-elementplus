@@ -43,7 +43,7 @@
           <el-form-item label="目标路径">
             <el-input
               v-model="moveForm.toPath"
-              placeholder="例如: E:/音乐/硬盘"
+              placeholder="例如: \\100.86.118.11\hdd\周杰伦\八度空间"
               style="width: 400px"
             />
           </el-form-item>
@@ -84,8 +84,45 @@
           <el-descriptions v-if="importResult.data" title="导入详情" :column="2" border>
             <el-descriptions-item label="导入歌曲">{{ importResult.data.imported?.length || 0 }}</el-descriptions-item>
             <el-descriptions-item label="总文件数">{{ importResult.data.total || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="失败数">{{ importResult.data.failed?.length || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="跳过数">{{ (importResult.data.total || 0) - (importResult.data.imported?.length || 0) - (importResult.data.failed?.length || 0) }}</el-descriptions-item>
+            <el-descriptions-item label="失败数">{{ (importResult.data.failed?.length) || 0 }}</el-descriptions-item>
+            <el-descriptions-item label="跳过数">{{ (importResult.data.total || 0) - (importResult.data.imported?.length || 0) - ((importResult.data.failed?.length) || 0) }}</el-descriptions-item>
+          </el-descriptions>
+        </div>
+      </el-tab-pane>
+
+      <!-- 一键导入 -->
+      <el-tab-pane label="一键导入" name="oneClick">
+        <el-form label-width="140px">
+          <el-form-item label="源路径">
+            <el-input
+              v-model="oneClickForm.fromPath"
+              placeholder="例如: C:/下载/音乐/周杰伦/八度空间"
+              style="width: 400px"
+            />
+          </el-form-item>
+          <el-form-item label="目标路径">
+            <el-input
+              v-model="oneClickForm.toPath"
+              placeholder="例如: \\100.86.118.11\hdd\周杰伦\八度空间"
+              style="width: 400px"
+            />
+          </el-form-item>
+          <el-form-item>
+            <el-button type="success" @click="handleOneClickImport" :loading="oneClickLoading">
+              开始一键导入
+            </el-button>
+          </el-form-item>
+        </el-form>
+        <el-alert v-if="oneClickLoading" :title="oneClickStep" type="info" show-icon :closable="false" />
+        <el-divider v-if="oneClickLoading" />
+        <div v-if="oneClickResult" class="result-box">
+          <el-alert :title="oneClickResult.message" :type="oneClickResult.success ? 'success' : 'error'" show-icon />
+          <el-divider />
+          <el-descriptions v-if="oneClickResult.data" title="导入详情" :column="2" border>
+            <el-descriptions-item label="导入歌曲">{{ oneClickResult.data.imported?.length || 0 }}</el-descriptions-item>
+            <el-descriptions-item label="总文件数">{{ oneClickResult.data.total || 0 }}</el-descriptions-item>
+            <el-descriptions-item label="失败数">{{ (oneClickResult.data.failed?.length) || 0 }}</el-descriptions-item>
+            <el-descriptions-item label="跳过数">{{ (oneClickResult.data.total || 0) - (oneClickResult.data.imported?.length || 0) - ((oneClickResult.data.failed?.length) || 0) }}</el-descriptions-item>
           </el-descriptions>
         </div>
       </el-tab-pane>
@@ -191,6 +228,54 @@ export default defineComponent({
       }
     }
 
+    // 一键导入
+    const oneClickForm = ref({ fromPath: "", toPath: "" });
+    const oneClickLoading = ref(false);
+    const oneClickStep = ref("");
+    const oneClickResult = ref<any>(null);
+
+    async function handleOneClickImport() {
+      if (!oneClickForm.value.fromPath || !oneClickForm.value.toPath) {
+        proxy.$message.warning("请输入源路径和目标路径");
+        return;
+      }
+      oneClickLoading.value = true;
+      oneClickResult.value = null;
+
+      try {
+        // 步骤1: 格式化文件名
+        oneClickStep.value = "步骤 1/3: 正在格式化文件名...";
+        const processedPath = trimPathTrailingSlash(oneClickForm.value.fromPath);
+        const formatResult = await HttpManager.formatFileNames(processedPath) as ResponseBody;
+        if (!formatResult.success) {
+          throw new Error(formatResult.message);
+        }
+
+        // 步骤2: 移动文件
+        oneClickStep.value = "步骤 2/3: 正在移动文件到目标路径...";
+        const moveResult = await HttpManager.moveFiles(oneClickForm.value.fromPath, oneClickForm.value.toPath) as ResponseBody;
+        if (!moveResult.success) {
+          throw new Error(moveResult.message);
+        }
+
+        // 步骤3: 导入数据库
+        oneClickStep.value = "步骤 3/3: 正在导入数据库...";
+        // 目标路径已包含歌手/专辑名，直接传给后端
+        const importResultData = await HttpManager.importToDatabase(oneClickForm.value.toPath) as ResponseBody;
+
+        oneClickResult.value = importResultData;
+        proxy.$message({
+          message: importResultData.message,
+          type: importResultData.type,
+        });
+      } catch (error: any) {
+        oneClickResult.value = { success: false, message: error.message || "请求失败，请检查后端服务" };
+      } finally {
+        oneClickLoading.value = false;
+        oneClickStep.value = "";
+      }
+    }
+
     return {
       breadcrumbList,
       activeTab,
@@ -209,6 +294,12 @@ export default defineComponent({
       importLoading,
       importResult,
       handleImport,
+      // oneClick
+      oneClickForm,
+      oneClickLoading,
+      oneClickStep,
+      oneClickResult,
+      handleOneClickImport,
     };
   },
 });

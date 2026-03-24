@@ -84,14 +84,8 @@ export function get(url, params?: object) {
 export function post(url, data = {}) {
   return new Promise((resolve, reject) => {
     axios.post(url, data).then(
-      response => {
-        console.log('post success:', response);
-        resolve(response.data);
-      },
-      error => {
-        console.log('post error:', error);
-        reject(error);
-      }
+      response => resolve(response.data),
+      error => reject(error)
     );
   });
 }

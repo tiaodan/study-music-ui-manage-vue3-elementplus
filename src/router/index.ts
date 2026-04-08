@@ -50,6 +50,11 @@ const routes: Array<RouteRecordRaw> = [
         path: '/MusicTool',
         component: () => import('@/views/MusicToolPage.vue'),
         meta: { title: 'MusicTool' }
+      },
+      {
+        path: '/S3Manage',
+        component: () => import('@/views/S3ManagePage.vue'),
+        meta: { title: 'S3Manage' }
       }
     ]
   },

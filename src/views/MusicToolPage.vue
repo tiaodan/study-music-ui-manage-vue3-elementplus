@@ -90,21 +90,21 @@
         </div>
       </el-tab-pane>
 
-      <!-- 一键导入 -->
-      <el-tab-pane label="一键导入" name="oneClick">
+      <!-- 一键导入-单专辑 -->
+      <el-tab-pane label="一键导入-单专辑" name="oneClick">
         <el-form label-width="140px">
           <el-form-item label="源路径">
             <el-input
               v-model="oneClickForm.fromPath"
               placeholder="例如: C:/下载/音乐/周杰伦/八度空间"
-              style="width: 400px"
+              style="width: 600px"
             />
           </el-form-item>
           <el-form-item label="目标路径">
             <el-input
               v-model="oneClickForm.toPath"
               placeholder="例如: \\100.86.118.11\hdd\周杰伦\八度空间"
-              style="width: 400px"
+              style="width: 600px"
             />
           </el-form-item>
           <el-form-item>
@@ -124,6 +124,50 @@
             <el-descriptions-item label="失败数">{{ (oneClickResult.data.failed?.length) || 0 }}</el-descriptions-item>
             <el-descriptions-item label="跳过数">{{ (oneClickResult.data.total || 0) - (oneClickResult.data.imported?.length || 0) - ((oneClickResult.data.failed?.length) || 0) }}</el-descriptions-item>
           </el-descriptions>
+        </div>
+      </el-tab-pane>
+
+      <!-- 一键导入-单歌手-所有专辑 -->
+      <el-tab-pane label="一键导入-单歌手-所有专辑" name="singerAlbums">
+        <el-form label-width="140px">
+          <el-form-item label="源路径">
+            <el-input
+              v-model="singerAlbumsForm.fromPath"
+              placeholder="例如: C:/下载/音乐/周杰伦"
+              style="width: 600px"
+            />
+          </el-form-item>
+          <el-form-item label="目标路径">
+            <el-input
+              v-model="singerAlbumsForm.toPath"
+              placeholder="例如: \\100.86.118.11\hdd\周杰伦"
+              style="width: 600px"
+            />
+          </el-form-item>
+          <el-form-item>
+            <el-button type="warning" @click="handleSingerAlbums" :loading="singerAlbumsLoading">
+              开始一键导入
+            </el-button>
+          </el-form-item>
+        </el-form>
+        <el-alert v-if="singerAlbumsLoading" :title="singerAlbumsStep || '正在处理中，请稍候...'" type="info" show-icon :closable="false" />
+        <el-divider v-if="singerAlbumsLoading" />
+        <div v-if="singerAlbumsResult" class="result-box">
+          <el-alert :title="singerAlbumsResult.message" :type="singerAlbumsResult.success ? 'success' : 'error'" show-icon />
+          <el-divider />
+          <el-descriptions v-if="singerAlbumsResult.data" title="导入详情" :column="2" border>
+            <el-descriptions-item label="总专辑">{{ singerAlbumsResult.data.total_albums || 0 }}</el-descriptions-item>
+            <el-descriptions-item label="成功专辑">{{ singerAlbumsResult.data.success || 0 }}</el-descriptions-item>
+            <el-descriptions-item label="总歌曲">{{ singerAlbumsResult.data.total_songs || 0 }}</el-descriptions-item>
+            <el-descriptions-item label="失败">{{ singerAlbumsResult.data.failed || 0 }}</el-descriptions-item>
+          </el-descriptions>
+          <el-divider v-if="singerAlbumsResult.data?.results?.length" />
+          <div v-if="singerAlbumsResult.data?.results?.length">
+            <div v-for="(item, index) in singerAlbumsResult.data.results" :key="index" style="margin-bottom: 8px;">
+              <el-tag :type="item.success ? 'success' : 'danger'" size="small">{{ item.album }}</el-tag>
+              <span style="margin-left: 8px;">{{ item.songs }}首歌 - {{ item.message }}</span>
+            </div>
+          </div>
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -276,6 +320,39 @@ export default defineComponent({
       }
     }
 
+    // 一键导入-单歌手-所有专辑
+    const singerAlbumsForm = ref({ fromPath: "", toPath: "" });
+    const singerAlbumsLoading = ref(false);
+    const singerAlbumsStep = ref("");
+    const singerAlbumsResult = ref<any>(null);
+
+    async function handleSingerAlbums() {
+      if (!singerAlbumsForm.value.fromPath || !singerAlbumsForm.value.toPath) {
+        proxy.$message.warning("请输入源路径和目标路径");
+        return;
+      }
+      singerAlbumsLoading.value = true;
+      singerAlbumsResult.value = null;
+      singerAlbumsStep.value = "正在处理中，请稍候...";
+
+      try {
+        const result = await HttpManager.importSingerAlbums(
+          trimPathTrailingSlash(singerAlbumsForm.value.fromPath),
+          trimPathTrailingSlash(singerAlbumsForm.value.toPath)
+        ) as ResponseBody;
+        singerAlbumsResult.value = result;
+        proxy.$message({
+          message: result.message,
+          type: result.type,
+        });
+      } catch (error: any) {
+        singerAlbumsResult.value = { success: false, message: error.message || "请求失败，请检查后端服务" };
+      } finally {
+        singerAlbumsLoading.value = false;
+        singerAlbumsStep.value = "";
+      }
+    }
+
     return {
       breadcrumbList,
       activeTab,
@@ -300,6 +377,12 @@ export default defineComponent({
       oneClickStep,
       oneClickResult,
       handleOneClickImport,
+      // singerAlbums
+      singerAlbumsForm,
+      singerAlbumsLoading,
+      singerAlbumsStep,
+      singerAlbumsResult,
+      handleSingerAlbums,
     };
   },
 });

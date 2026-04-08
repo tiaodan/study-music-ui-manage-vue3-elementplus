@@ -98,7 +98,37 @@ const HttpManager = {
     // 移动文件到HDD
     moveFiles: (fromPath, toPath) => post(`import/move-file`, {fromPath, toPath}),
     // 规整进数据库 - 遍历指定路径的文件，解析歌手→插入作者→插入歌曲→关联song-singer
-    importToDatabase: (path) => post(`import/songs`, {path})
+    importToDatabase: (path) => post(`import/songs`, {path}),
+    // 一键导入-单歌手-所有专辑
+    importSingerAlbums: (from, to) => post(`import/singer/albums`, {from, to}),
+
+    // =======================> AWS S3 管理 API
+    // 列出文件夹列表
+    listS3Folders: (prefix = "") => get(`s3/folders?prefix=${encodeURIComponent(prefix)}`),
+    // 创建文件夹
+    createS3Folder: (path) => post(`s3/folder`, {path}),
+    // 删除文件夹
+    deleteS3Folder: (path) => deletes(`s3/folder?path=${encodeURIComponent(path)}`),
+    // 获取文件夹详情
+    getS3FolderInfo: (path) => get(`s3/folder/info?path=${encodeURIComponent(path)}`),
+    // 列出文件夹内文件
+    listS3Objects: (path, limit = 100) => get(`s3/objects?path=${encodeURIComponent(path)}&limit=${limit}`),
+    // 上传文件
+    uploadS3File: (path) => `${getBaseURL()}/s3/upload?path=${encodeURIComponent(path)}`,
+    // 获取文件详情
+    getS3ObjectInfo: (key) => get(`s3/object/info?key=${encodeURIComponent(key)}`),
+    // 获取下载链接
+    getS3DownloadUrl: (key, expire = 3600) => get(`s3/object/download?key=${encodeURIComponent(key)}&expire=${expire}`),
+    // 复制文件
+    copyS3Object: (sourceKey, destKey) => post(`s3/object/copy`, {sourceKey, destKey}),
+    // 删除文件
+    deleteS3Object: (path) => deletes(`s3/object?path=${encodeURIComponent(path)}`),
+    // 批量获取文件信息
+    batchGetS3ObjectsInfo: (keys) => post(`s3/objects/batch/info`, {keys}),
+    // 批量复制文件
+    batchCopyS3Objects: (items) => post(`s3/objects/batch/copy`, {items}),
+    // 批量删除文件
+    batchDeleteS3Objects: (keys) => deletes(`s3/objects/batch`, {data: {keys}})
 
 }
 

@@ -9,6 +9,20 @@ axios.defaults.baseURL = BASE_URL
 // Content-Type 响应头
 axios.defaults.headers.post['Content-Type'] = 'application/json;charset=UTF-8'
 
+// 请求拦截器 - 添加token
+axios.interceptors.request.use(
+  config => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  error => {
+    return Promise.reject(error)
+  }
+)
+
 // 响应拦截器
 axios.interceptors.response.use(
   response => {
@@ -22,15 +36,13 @@ axios.interceptors.response.use(
   },
   // 服务器状态码不是2开头的的情况
   error => {
-    if (error.response.status) {
+    if (error.response && error.response.status) {
       switch (error.response.status) {
-        // 401: 未登录
+        // 401: 未登录或token过期
         case 401:
+          localStorage.removeItem('token');
           router.replace({
             path: "/",
-            query: {
-              // redirect: router.currentRoute.fullPath
-            },
           });
           break;
         case 403:

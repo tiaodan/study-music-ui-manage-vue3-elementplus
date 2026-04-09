@@ -10,7 +10,7 @@
           <el-input type="password" placeholder="password" v-model="ruleForm.password" @keyup.enter="submitForm"></el-input>
         </el-form-item>
         <el-form-item>
-          <el-button class="login-btn" type="primary" @click="submitForm">登录</el-button>
+          <el-button class="login-btn" type="primary" @click="submitForm" :loading="loading">登录</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -29,6 +29,7 @@ export default defineComponent({
     const { routerManager } = mixin();
 
     const nusicName = ref(MUSICNAME);
+    const loading = ref(false);
     const ruleForm = reactive({
       username: "admin",
       password: "123",
@@ -38,18 +39,31 @@ export default defineComponent({
       password: [{ required: true, message: "请输入密码", trigger: "blur" }],
     });
     async function submitForm() {
-      let username = ruleForm.username;
-      let password = ruleForm.password;
-      const result = (await HttpManager.getLoginStatus({username,password})) as ResponseBody;
-      (proxy as any).$message({
-        message: result.message,
-        type: result.type,
-      });
+      if (loading.value) return;
+      loading.value = true;
+      try {
+        let username = ruleForm.username;
+        let password = ruleForm.password;
+        const result = (await HttpManager.getLoginStatus({username,password})) as ResponseBody;
+        (proxy as any).$message({
+          message: result.message,
+          type: result.type,
+        });
 
-      if (result.success) routerManager(RouterName.Info, { path: RouterName.Info });
+        if (result.success) {
+          // 保存token到localStorage
+          if (result.data && result.data.token) {
+            localStorage.setItem('token', result.data.token);
+          }
+          routerManager(RouterName.Info, { path: RouterName.Info });
+        }
+      } finally {
+        loading.value = false;
+      }
     }
     return {
       nusicName,
+      loading,
       ruleForm,
       rules,
       submitForm,

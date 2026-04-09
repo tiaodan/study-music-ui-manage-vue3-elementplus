@@ -4,8 +4,10 @@ const HttpManager = {
     // 获取图片信息
     attachImageUrl: (url) => `${getBaseURL()}/${url}`,
     // =======================> 管理员 API 完成
-    // 是否登录成功
-    getLoginStatus: ({username, password}) => post(`admin/login/status`, {username, password}),
+    // 登录获取token
+    getLoginStatus: ({username, password}) => post(`admin/login`, {username, password}),
+    // 检查登录状态
+    checkLoginStatus: () => get(`admin/login/status`),
 
     // =======================> 用户 API 完成
     // 返回所有用户

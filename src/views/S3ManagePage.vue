@@ -179,6 +179,9 @@ import { Folder, Document } from '@element-plus/icons-vue';
 interface FolderItem {
   name: string;
   path: string;
+  file_count?: number;
+  total_size?: number;
+  last_modified?: string;
 }
 
 interface ObjectItem {
@@ -246,13 +249,13 @@ export default defineComponent({
         // 加载文件夹
         const folderResult = await HttpManager.listS3Folders(currentPath.value) as any;
         if (folderResult.success) {
-          folders.value = folderResult.data || [];
+          folders.value = folderResult.data?.folders || [];
         }
 
         // 加载文件
         const objectResult = await HttpManager.listS3Objects(currentPath.value) as any;
         if (objectResult.success) {
-          objects.value = objectResult.data || [];
+          objects.value = objectResult.data?.objects || [];
         }
       } catch (error) {
         proxy.$message.error("加载失败");
@@ -312,7 +315,13 @@ export default defineComponent({
         if (result.success) {
           proxy.$message.success("创建成功");
           createFolderVisible.value = false;
-          loadData();
+          // 直接添加到列表，不重新加载
+          folders.value.push({
+            path: fullPath + "/",
+            name: newFolderName.value,
+            file_count: 0,
+            total_size: 0
+          });
         } else {
           proxy.$message.error(result.message || "创建失败");
         }

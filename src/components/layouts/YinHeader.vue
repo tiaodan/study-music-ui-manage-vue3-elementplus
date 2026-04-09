@@ -8,7 +8,9 @@
     <div class="header-right">
       <div class="header-user-con">
         <div class="user-avator">
-          <img :src="attachImageUrl(userPic)" />
+          <div class="default-avatar" :style="{ backgroundColor: avatarColor }">
+            {{ avatarText }}
+          </div>
         </div>
         <el-dropdown class="user-name" trigger="click" @command="handleCommand">
           <span class="el-dropdown-link">
@@ -48,6 +50,26 @@ export default defineComponent({
     const userPic = computed(() => store.getters.userPic);
     const nusicName = ref(MUSICNAME);
 
+    // 生成头像首字母
+    const avatarText = computed(() => {
+      const name = username.value || "A";
+      return name.charAt(0).toUpperCase();
+    });
+
+    // 根据用户名生成颜色
+    const avatarColor = computed(() => {
+      const colors = [
+        "#409EFF", "#67C23A", "#E6A23C", "#F56C6C", "#909399",
+        "#00bcd4", "#9c27b0", "#ff5722", "#795548", "#607d8b"
+      ];
+      const name = username.value || "A";
+      let hash = 0;
+      for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      return colors[Math.abs(hash) % colors.length];
+    });
+
     onMounted(() => {
       if (document.body.clientWidth < 1500) {
         collapseChage();
@@ -69,6 +91,8 @@ export default defineComponent({
       nusicName,
       username,
       userPic,
+      avatarText,
+      avatarColor,
       collapse,
       collapseChage,
       handleCommand,
@@ -122,6 +146,18 @@ export default defineComponent({
   width: 40px;
   height: 40px;
   border-radius: 50%;
+}
+
+.default-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
 }
 
 .el-dropdown-link {
